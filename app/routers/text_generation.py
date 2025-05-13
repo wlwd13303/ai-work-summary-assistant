@@ -11,7 +11,7 @@ async def generation_report(request: TextGenerationRequest):
     """生成周报API"""
     try:
         # 初始化模型
-        if not text_generation_model.initialize():
+        if not text_generation_model.initialized:
             text_generation_model.initialize()
         # 生成文本
         generated_text = text_generation_model.generate_text(request.content)

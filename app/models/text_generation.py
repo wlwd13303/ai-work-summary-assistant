@@ -15,16 +15,18 @@ class TextGenerationModel:
     def initialize(self):
         '''初始化模型和分词器'''
         try:
-            logger.info(f"Loading model from {settings.MODEL_PATH}...")
+            logger.info(f"Loading model from {settings.MODEL_NAME}...")
             self.tokenizer = AutoTokenizer.from_pretrained(settings.MODEL_NAME, trust_remote_code=True)
             self.model = AutoModel.from_pretrained(settings.MODEL_NAME, trust_remote_code=True)
             # 如果有GPU，将模型移至GPU
-            if settings.DEVICE == 'cpu' and torch.cuda.is_available():
+            if settings.DEVICE != 'cpu' and torch.cuda.is_available():
                 self.model = self.model.to(settings.DEVICE)
             self.initialized = True
             logger.info("Model initialized successfully.")
+            return True
         except Exception as e:
-            logger.error("Model initialized successfully.")
+            logger.error(f"Model initialization failed: {str(e)}")
+            return False
 
     def generate(self, input_text, max_length=1024):
         '''生成文本'''
@@ -46,7 +48,7 @@ class TextGenerationModel:
             else:
                 # 一般的生成式模型
                 inputs = self.tokenizer(prompt, return_tensors='pt')
-                if settings.DEVICE == 'cpu' and torch.cuda.is_available():
+                if settings.DEVICE != 'cpu' and torch.cuda.is_available():
                     inputs = {k: v.to(settings.DEVICE) for k, v in inputs.items()}
                 outputs = self.model.generate(**inputs, max_length=max_length, num_return_sequences=1)
                 response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -54,6 +56,12 @@ class TextGenerationModel:
 
         except Exception as e:
             logger.error(f"Text generation failed: {str(e)}")
+            raise e
+            
+    # 添加generate_text方法作为generate的别名，保持API兼容性
+    def generate_text(self, input_text, max_length=1024):
+        '''生成文本（别名方法）'''
+        return self.generate(input_text, max_length)
 
 # 创建模型单例
 text_generation_model = TextGenerationModel()
