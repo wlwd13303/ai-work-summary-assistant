@@ -28,8 +28,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     # 自定义应用
-    'users',
-    'reports',
+    'users.apps.UsersConfig',  # 使用应用配置类
+    'reports.apps.ReportsConfig',  # 使用应用配置类
 ]
 
 MIDDLEWARE = [
