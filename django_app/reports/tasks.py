@@ -1,10 +1,12 @@
-from celery import shared_task
-import requests
 import json
 import logging
+from datetime import datetime
+
+import requests
+from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from datetime import datetime
+
 from .models import WeeklyReport
 
 logger = logging.getLogger(__name__)
@@ -25,13 +27,9 @@ def generate_weekly_report_task(user_id, content, start_date, end_date):
         # 调用FastAPI服务生成周报
         fastapi_url = f"{settings.FASTAPI_URL}/api/v1/text-generation/generate_report"
 
-        payload = {
-            "content": content
-        }
+        payload = {"content": content}
 
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
 
         response = requests.post(fastapi_url, data=json.dumps(payload), headers=headers)
 
@@ -49,21 +47,18 @@ def generate_weekly_report_task(user_id, content, start_date, end_date):
                 year=year,
                 week_number=week_number,
                 defaults={
-                    'start_date': start_date_obj,
-                    'end_date': end_date_obj,
-                    'content': generated_text,
+                    "start_date": start_date_obj,
+                    "end_date": end_date_obj,
+                    "content": generated_text,
                     # 以下字段可以根据生成的文本进行解析填充，这里简单处理
-                    'achievements': '',
-                    'plans': '',
-                    'issues': '',
-                    'thoughts': ''
-                }
+                    "achievements": "",
+                    "plans": "",
+                    "issues": "",
+                    "thoughts": "",
+                },
             )
 
-            return {
-                'weekly_report_id': weekly_report.id,
-                'generated_text': generated_text
-            }
+            return {"weekly_report_id": weekly_report.id, "generated_text": generated_text}
         else:
             logger.error(f"FastAPI服务返回错误: {response.status_code}, {response.text}")
             raise Exception(f"FastAPI服务返回错误: {response.status_code}")

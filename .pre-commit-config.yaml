@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace    # 删除行尾空格
+      - id: end-of-file-fixer     # 确保文件末尾有换行
+      - id: check-yaml            # 检查 YAML 语法
+      - id: check-added-large-files  # 阻止大文件提交
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        args: [ --line-length=120 ]  # 保留你的自定义参数
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort                # 自动排序 import 语句
+        name: isort (python)
+        args: [ --profile=black ]  # 使用与 Black 兼容的配置
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8              # Python 代码风格检查
+        args: [ --max-line-length=120]

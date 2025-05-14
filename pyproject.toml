@@ -44,6 +44,7 @@ dev = [
     "mypy>=1.5.1",
     "ipython",
     "django-extensions",
+    "pre-commit",
 ]
 
 [tool.setuptools]

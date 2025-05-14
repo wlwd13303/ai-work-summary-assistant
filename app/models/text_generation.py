@@ -1,6 +1,7 @@
-import requests
-import json
 import logging
+
+import requests
+
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ class TextGenerationModel:
         self.api_url = settings.DEEPSEEK_API_URL
 
     def initialize(self):
-        '''初始化API配置'''
+        """初始化API配置"""
         if not self.api_key:
             logger.error("未设置DeepSeek API密钥")
             return False
@@ -22,7 +23,7 @@ class TextGenerationModel:
         return True
 
     def generate(self, input_text, max_length=4096):
-        '''生成文本'''
+        """生成文本"""
         if not self.initialized:
             self.initialize()
 
@@ -40,17 +41,12 @@ class TextGenerationModel:
             # 构建请求体
             payload = {
                 "model": settings.DEEPSEEK_MODEL_NAME,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.7,
-                "max_tokens": max_length
+                "max_tokens": max_length,
             }
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}"
-            }
+            headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
 
             response = requests.post(self.api_url, headers=headers, json=payload)
 
@@ -69,7 +65,7 @@ class TextGenerationModel:
 
     # 添加generate_text方法作为generate的别名，保持API兼容性
     def generate_text(self, input_text, max_length=4096):
-        '''生成文本（别名方法）'''
+        """生成文本（别名方法）"""
         return self.generate(input_text, max_length)
 
 
