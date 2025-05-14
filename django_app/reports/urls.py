@@ -1,9 +1,13 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
 app_name = 'reports'
 
+router = DefaultRouter()
+router.register(r'daily', views.DailyReportViewSet, basename='daily_report')
+router.register(r'weekly', views.WeeklyReportViewSet, basename='weekly_report')
+
 urlpatterns = [
-    # 这里将添加日报和周报的API路由
-    # 暂时保留空的，等实现报告功能时再添加
+    path('', include(router.urls)),
 ]

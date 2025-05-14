@@ -1,39 +1,33 @@
-from transformers import AutoTokenizer, AutoModel
-import torch
-from app.config import settings
+import requests
+import json
 import logging
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class TextGenerationModel:
     def __init__(self):
-        self.model = None
-        self.tokenizer = None
-        self.initialized = False
+        self.initialized = True
+        self.api_key = settings.DEEPSEEK_API_KEY
+        self.api_url = settings.DEEPSEEK_API_URL
 
     def initialize(self):
-        '''初始化模型和分词器'''
-        try:
-            logger.info(f"Loading model from {settings.MODEL_NAME}...")
-            self.tokenizer = AutoTokenizer.from_pretrained(settings.MODEL_NAME, trust_remote_code=True)
-            self.model = AutoModel.from_pretrained(settings.MODEL_NAME, trust_remote_code=True)
-            # 如果有GPU，将模型移至GPU
-            if settings.DEVICE != 'cpu' and torch.cuda.is_available():
-                self.model = self.model.to(settings.DEVICE)
-            self.initialized = True
-            logger.info("Model initialized successfully.")
-            return True
-        except Exception as e:
-            logger.error(f"Model initialization failed: {str(e)}")
+        '''初始化API配置'''
+        if not self.api_key:
+            logger.error("未设置DeepSeek API密钥")
             return False
+        self.initialized = True
+        logger.info("DeepSeek API初始化成功")
+        return True
 
-    def generate(self, input_text, max_length=1024):
+    def generate(self, input_text, max_length=4096):
         '''生成文本'''
         if not self.initialized:
             self.initialize()
+
         try:
-            #  为周报生成构建提示词
+            # 为周报生成构建提示词
             prompt = f"""请根据以下工作内容，生成一份结构良好、表达专业的工作周报：
                     {input_text}
                     请生成包含以下部分的周报：
@@ -42,26 +36,42 @@ class TextGenerationModel:
                     3. 工作中遇到的问题和解决方案（如果有）
                     4. 工作心得（如果有）
                     """
-            if hasattr(self.model, 'chat') and callable(self.model.chat):
-                # ChatGLM等模型
-                response, _ = self.model.chat(self.tokenizer, prompt=prompt, history=[])
+
+            # 构建请求体
+            payload = {
+                "model": settings.DEEPSEEK_MODEL_NAME,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": max_length
+            }
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}"
+            }
+
+            response = requests.post(self.api_url, headers=headers, json=payload)
+
+            if response.status_code == 200:
+                result = response.json()
+                # 根据DeepSeek API的响应格式提取文本
+                generated_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                return generated_text
             else:
-                # 一般的生成式模型
-                inputs = self.tokenizer(prompt, return_tensors='pt')
-                if settings.DEVICE != 'cpu' and torch.cuda.is_available():
-                    inputs = {k: v.to(settings.DEVICE) for k, v in inputs.items()}
-                outputs = self.model.generate(**inputs, max_length=max_length, num_return_sequences=1)
-                response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            return response
+                logger.error(f"DeepSeek API调用失败: {response.status_code}, {response.text}")
+                return f"API调用失败: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Text generation failed: {str(e)}")
+            logger.error(f"文本生成失败: {str(e)}")
             raise e
-            
+
     # 添加generate_text方法作为generate的别名，保持API兼容性
-    def generate_text(self, input_text, max_length=1024):
+    def generate_text(self, input_text, max_length=4096):
         '''生成文本（别名方法）'''
         return self.generate(input_text, max_length)
+
 
 # 创建模型单例
 text_generation_model = TextGenerationModel()
